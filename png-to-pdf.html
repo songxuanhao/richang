@@ -374,16 +374,19 @@
 
     async function pngFileToPdf(file) {
       const arrayBuffer = await file.arrayBuffer();
-
-      // Get image natural dimensions
       const { width, height } = await getImageDimensions(file);
 
       const pdfDoc = await PDFDocument.create();
       const pngImage = await pdfDoc.embedPng(arrayBuffer);
 
-      // 1 px == 1 pt (72 dpi mapping keeps dimensions numerically identical)
-      const page = pdfDoc.addPage([width, height]);
-      page.drawImage(pngImage, { x: 0, y: 0, width, height });
+      // Scale so the longest side equals 10 cm (1 cm = 28.3465 pt)
+      const MAX_PT = 10 * 28.3465;
+      const scale  = MAX_PT / Math.max(width, height);
+      const pageW  = width  * scale;
+      const pageH  = height * scale;
+
+      const page = pdfDoc.addPage([pageW, pageH]);
+      page.drawImage(pngImage, { x: 0, y: 0, width: pageW, height: pageH });
 
       return pdfDoc.save();
     }
