@@ -6,7 +6,6 @@
   <title>PDF 批量转 PNG（按地名分类）</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -274,6 +273,7 @@
     resultInfo.style.display = 'none';
     progressBarWrap.style.display = 'none';
     progressText.style.display = 'none';
+    if (window._lastZipUrl) { URL.revokeObjectURL(window._lastZipUrl); window._lastZipUrl = null; }
   });
 
   // ── 转换 ──────────────────────────────────────
@@ -347,7 +347,11 @@
       compression: 'DEFLATE',
       compressionOptions: { level: 1 }
     });
-    saveAs(zipBlob, 'PNG分类输出.zip');
+
+    // 释放上次的 blob URL
+    if (window._lastZipUrl) URL.revokeObjectURL(window._lastZipUrl);
+    window._lastZipUrl = URL.createObjectURL(zipBlob);
+    const sizeMB = (zipBlob.size / 1024 / 1024).toFixed(2);
 
     progressBar.style.width = '100%';
     progressText.textContent = '完成！';
@@ -356,7 +360,12 @@
     resultInfo.innerHTML = `
       ✅ 转换完成！共处理 <b>${total}</b> 个文件，
       成功 <b>${total - errorCount}</b> 个${errorCount > 0 ? `，失败 <b>${errorCount}</b> 个` : ''}。<br>
-      ZIP 文件已按地名分文件夹打包下载。
+      ZIP 已就绪（${sizeMB} MB），点击下方按钮保存到指定位置：<br><br>
+      <a href="${window._lastZipUrl}" download="PNG分类输出.zip"
+         style="display:inline-block;padding:10px 32px;background:#1677ff;color:#fff;
+                border-radius:7px;text-decoration:none;font-size:15px;">
+        ⬇ 下载 PNG分类输出.zip
+      </a>
     `;
 
     btnConvert.disabled = false;
